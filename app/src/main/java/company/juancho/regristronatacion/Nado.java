@@ -24,6 +24,12 @@ public class Nado {
 
     }
 
+    public Nado(int cantPiletas, Date date, String comentario){
+        this.cantPiletas = cantPiletas;
+        this.date = date;
+        this.comentario = comentario;
+    }
+
     public Nado(long id, int cantPiletas, Date date) {
         this.id = id;
         this.cantPiletas = cantPiletas;

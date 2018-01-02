@@ -1,5 +1,10 @@
 package company.juancho.regristronatacion;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -15,14 +20,19 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.pixelcan.inkpageindicator.InkPageIndicator;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import company.juancho.regristronatacion.tools.Comunicador;
+import company.juancho.regristronatacion.tools.ExportadorJSon;
+import company.juancho.regristronatacion.tools.GSonNadoParser;
+import company.juancho.regristronatacion.tools.ImportadorJSon;
 import io.objectbox.Box;
 import io.objectbox.BoxStore;
 import io.objectbox.query.Query;
@@ -64,7 +74,7 @@ public class MainActivityWithTab extends AppCompatActivity implements Comunicado
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_with_tab);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
@@ -133,16 +143,47 @@ public class MainActivityWithTab extends AppCompatActivity implements Comunicado
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            nadoBox.removeAll();
-            fragmentGrafica.updateFragments(getMejorNado(),getUltimoNado());
-            fragmentGrafica.updateGrafica();
-            fragmentLista.limpiarLista();
-            return true;
+
+        switch (id){
+            case R.id.action_borrar_datos:
+                nadoBox.removeAll();
+                fragmentGrafica.updateFragments(getMejorNado(),getUltimoNado());
+                fragmentGrafica.updateGrafica();
+                fragmentLista.limpiarLista();
+                return true;
+            case R.id.action_exportar:
+                /*try {
+                    GSonNadoParser.exportToJSon(openFileOutput("prueba_int.json", Context.MODE_WORLD_READABLE),  getMejorNado());
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                };*/
+
+                ExportadorJSon exportadorJSon = new ExportadorJSon(this);
+                exportadorJSon.execute(getUltimosNados(MAX_ITEMS));
+                return true;
+
+            case R.id.action_importar:
+                /*Nado aux = null;
+                try {
+                    aux = GSonNadoParser.getNadoToJson(openFileInput("prueba_int.json"));
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                //fragmentGrafica.updateFragments(aux, aux);
+                Toast.makeText(this,aux.getDate().toString(),Toast.LENGTH_LONG).show();*/
+                ImportadorJSon importadorJSon = new ImportadorJSon(this);
+                importadorJSon.execute();
+                return true;
+
+            case R.id.acerca_de:
+                createSimpleDialog().show();
+                return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
+
+
 
 
     //endregion
@@ -220,6 +261,9 @@ public class MainActivityWithTab extends AppCompatActivity implements Comunicado
 
     //endregion
 
+
+
+
     //region Comunicador
 
     @Override
@@ -247,8 +291,20 @@ public class MainActivityWithTab extends AppCompatActivity implements Comunicado
 
     }
 
+    @Override
+    public void setNados(List<Nado> nados) {
+        nadoBox.removeAll();
+        //Toast.makeText(this,nados.get(0).getComentario().toString(),Toast.LENGTH_LONG).show();
+        for(int i=0;i<nados.size();i++){
+            Nado aux = nados.get(i);
+            nadoBox.put(new Nado(aux.getCantPiletas(),aux.getDate(),aux.getComentario()));
 
+        }
+        //nadoBox.put(nados);
+        fragmentGrafica.updateFragments(getMejorNado(),getUltimoNado());
+        fragmentLista.actualizarLista(getUltimosNados(MAX_ITEMS));
 
+    }
 
     //endregion
 
@@ -297,5 +353,56 @@ public class MainActivityWithTab extends AppCompatActivity implements Comunicado
 
 
         //endregion
+
+
+
+    /**
+     * Crea un diálogo de alerta sencillo
+     * @return Nuevo diálogo
+     */
+    public AlertDialog createSimpleDialog() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setTitle("Registro Natación v1.5")
+                .setMessage("Aplicación desarrollada por BosqueOesteCompany.\nPara reportar una falla o realizar una sugerencia, contactenos en bosqueoeste@gmail.com")
+                .setPositiveButton("Contactarno",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                sendEmail();
+                            }
+                        })
+                .setNegativeButton("Salir",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+
+        return builder.create();
+    }
+
+
+    protected void sendEmail() {
+        String TO = "bosqueoeste@gmail.com";
+
+        Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
+        emailIntent.setData(Uri.parse("mailto:"));
+        //emailIntent.setType("text/plain");
+        emailIntent.putExtra(Intent.EXTRA_EMAIL, TO);
+
+        emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Reporte de Falla o Sugerencia");
+        emailIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+
+
+        if (emailIntent.resolveActivity(getPackageManager()) != null) {
+            startActivity(Intent.createChooser(emailIntent, "Enviar email..."));
+        } else {
+            Toast.makeText(MainActivityWithTab.this,
+                    "No tienes clientes de email instalados.", Toast.LENGTH_SHORT).show();
+        }
+
+    }
 
 }

@@ -13,4 +13,8 @@
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="title_activity_principal_con_tab">PrincipalConTab</string>
     <string name="title_activity_main_with_tab">Registro Natacion</string>
+    <string name="action_importar_datos">Importar Datos</string>
+    <string name="action_exportar_datos">Exportar Datos</string>
+    <string name="acerca_de">Acerca de...</string>
+
 </resources>
